@@ -14,7 +14,8 @@ type RunCmdConfig struct {
 	ShouldColor   bool
 	CaptureStdout bool
 }
-// loglevel is the level above which it won't be printed 
+
+// NewRunner loglevel is the level above which it won't be printed
 func NewRunner(logLevel echo.LogLevel, shouldColor bool, captureStdout bool) *RunCmdConfig {
 	return &RunCmdConfig{
 		LogLevel:      logLevel,
@@ -23,10 +24,10 @@ func NewRunner(logLevel echo.LogLevel, shouldColor bool, captureStdout bool) *Ru
 	}
 }
 
-func (runner RunCmdConfig) RunCmd (loglevel echo.LogLevel, name string, args ... string) (stdoutBuffer [] string, err error, exitCode int) {
+func (runner RunCmdConfig) RunCmd(loglevel echo.LogLevel, name string, args ...string) (stdoutBuffer []string, err error, exitCode int) {
 	command := exec.Command(name, args...)
 
-	// get stdout 
+	// get stdout
 	stdout, err := command.StdoutPipe()
 	if err != nil {
 		return nil, err, -1
@@ -45,7 +46,7 @@ func (runner RunCmdConfig) RunCmd (loglevel echo.LogLevel, name string, args ...
 
 	// configure a logger as stdout/stderr maybe alot
 	l := echo.NewLogger(runner.LogLevel, os.Stderr)
-	
+
 	// capture stdout
 	stdoutBuf := []string{}
 
@@ -65,7 +66,7 @@ func (runner RunCmdConfig) RunCmd (loglevel echo.LogLevel, name string, args ...
 	green := echo.Green
 	red := echo.Red
 
-	if ! runner.ShouldColor {
+	if !runner.ShouldColor {
 		green = echo.DefaultColor
 		red = echo.DefaultColor
 	}
@@ -86,15 +87,15 @@ func (runner RunCmdConfig) RunCmd (loglevel echo.LogLevel, name string, args ...
 // An exit code of -1 shows some other error occurred. Error should be checked.
 //
 //	If shouldColor is set to true the stdout is printed in green and stderr in red else the default color is used.
-// 
-// If streamoutput is set to true stdout from the proccess will be streamed back. stderr is streamed either way.
+//
+// If streamoutput is set to true stdout from the process will be streamed back. stderr is streamed either way.
 // The exit code is returned also since in some processes an exit code of say 1 is a warning and is acceptable.
 //
 //	For arguements pass them as separate strings eg "ls", "-l"
-func RunCmd(shouldColor bool, captureStdout bool, streamOutput bool, name string, args ...string) (stdoutBuffer [] string, err error, exitCode int) {
+func RunCmd(shouldColor bool, captureStdout bool, streamOutput bool, name string, args ...string) (stdoutBuffer []string, err error, exitCode int) {
 	level := echo.Info
 
-	if ! streamOutput {
+	if !streamOutput {
 		level = echo.Error
 	}
 	r := NewRunner(level, shouldColor, captureStdout)

@@ -45,7 +45,7 @@ func (runner RunCmdConfig) RunCmd(loglevel echo.LogLevel, name string, args ...s
 	}
 
 	// configure a logger as stdout/stderr maybe alot
-	l := echo.NewLogger(runner.LogLevel, os.Stderr)
+	l := echo.NewLogger(runner.LogLevel, os.Stdout)
 
 	// capture stdout
 	stdoutBuf := []string{}

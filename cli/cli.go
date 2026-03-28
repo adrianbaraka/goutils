@@ -13,14 +13,16 @@ type RunCmdConfig struct {
 	LogLevel      echo.LogLevel
 	ShouldColor   bool
 	CaptureStdout bool
+	StreamOutput  bool
 }
 
 // NewRunner loglevel is the level above which it won't be printed
-func NewRunner(logLevel echo.LogLevel, shouldColor bool, captureStdout bool) *RunCmdConfig {
+func NewRunner(logLevel echo.LogLevel, shouldColor bool, captureStdout bool, streamoutput bool) *RunCmdConfig {
 	return &RunCmdConfig{
 		LogLevel:      logLevel,
 		ShouldColor:   shouldColor,
 		CaptureStdout: captureStdout,
+		StreamOutput:  streamoutput,
 	}
 }
 
@@ -54,8 +56,9 @@ func (runner RunCmdConfig) RunCmd(loglevel echo.LogLevel, name string, args ...s
 	copyFunc := func(r io.Reader, w io.Writer, color echo.Colour, loglev echo.LogLevel) {
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
-			l.Fecholn(color, loglev, w, scanner.Text())
-
+			if runner.StreamOutput {
+				l.Fecholn(color, loglev, w, scanner.Text())
+			}
 			if w == os.Stdout && runner.CaptureStdout {
 				stdoutBuf = append(stdoutBuf, scanner.Text())
 			}
@@ -88,7 +91,7 @@ func (runner RunCmdConfig) RunCmd(loglevel echo.LogLevel, name string, args ...s
 //
 //	If shouldColor is set to true the stdout is printed in green and stderr in red else the default color is used.
 //
-// If streamoutput is set to true stdout from the process will be streamed back. stderr is streamed either way.
+// If streamoutput is set to true stdout/stderr from the process will be streamed back.
 // The exit code is returned also since in some processes an exit code of say 1 is a warning and is acceptable.
 //
 //	For arguements pass them as separate strings eg "ls", "-l"
@@ -98,7 +101,7 @@ func RunCmd(shouldColor bool, captureStdout bool, streamOutput bool, name string
 	if !streamOutput {
 		level = echo.Error
 	}
-	r := NewRunner(level, shouldColor, captureStdout)
+	r := NewRunner(level, shouldColor, captureStdout, streamOutput)
 
 	return r.RunCmd(echo.Info, name, args...)
 }

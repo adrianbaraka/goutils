@@ -51,7 +51,12 @@ func (runner RunCmdConfig) RunCmd(loglevel echo.LogLevel, name string, args ...s
 	// configure a logger as stdout/stderr maybe alot
 	l := echo.NewLogger(runner.LogLevel, os.Stdout)
 
-	l.Echof(echo.DefaultColor, echo.Trace, "Running Command: '%v %v'\n", name, strings.Join(args, " "))
+	color := echo.DefaultColor
+	if runner.ShouldColor {
+		color = echo.Cyan
+	}
+
+	l.Echof(color, echo.Trace, "Running Command: '%v %v'\n", name, strings.Join(args, " "))
 
 	// capture stdout
 	stdoutBuf := []string{}
@@ -96,6 +101,27 @@ func (runner RunCmdConfig) RunCmd(loglevel echo.LogLevel, name string, args ...s
 
 }
 
+// This function purely streams whatever the command outputs.
+func (runner RunCmdConfig) RunCmdStreamer(loglevel echo.LogLevel, name string, args ...string) (err error, exitCode int) {
+	command := exec.Command(name, args...)
+
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+
+	color := echo.DefaultColor
+	if runner.ShouldColor {
+		color = echo.Cyan
+	}
+
+	l := echo.NewLogger(runner.LogLevel, os.Stdout)
+	l.Echof(color, echo.Trace, "Running Command: '%v %v'\n", name, strings.Join(args, " "))
+
+	if err := command.Run(); err != nil {
+		return err, command.ProcessState.ExitCode()
+	}
+	return nil, command.ProcessState.ExitCode()
+}
+
 // Run a command from $PATH. If it is not found an error is returned.
 // An exit code of -1 shows some other error occurred. Error should be checked.
 //
@@ -115,6 +141,18 @@ func RunCmd(shouldColor bool, captureStdout bool, streamOutput bool, name string
 
 	return r.RunCmd(echo.Info, name, args...)
 }
+
+func RunCmdStreamer(shouldColor bool, captureStdout bool, streamOutput bool, name string, args ...string) (err error, exitCode int) {
+	level := echo.Info
+
+	if !streamOutput {
+		level = echo.Error
+	}
+	r := NewRunner(level, shouldColor, captureStdout, streamOutput)
+
+	return r.RunCmdStreamer(echo.Info, name, args...)
+}
+
 
 // Takes a list of executables that are required to be in the system path
 //

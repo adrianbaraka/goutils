@@ -2,9 +2,11 @@ package cli
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/adrianbaraka/goutils/echo"
 )
@@ -49,8 +51,13 @@ func (runner RunCmdConfig) RunCmd(loglevel echo.LogLevel, name string, args ...s
 	// configure a logger as stdout/stderr maybe alot
 	l := echo.NewLogger(runner.LogLevel, os.Stdout)
 
+	l.Echof(echo.DefaultColor, echo.Trace, "Running Command: '%v %v'\n", name, strings.Join(args, " "))
+
 	// capture stdout
 	stdoutBuf := []string{}
+
+	// capture stderr
+	stderrBuf := []string{}
 
 	// Helper to scan and log
 	copyFunc := func(r io.Reader, w io.Writer, color echo.Colour, loglev echo.LogLevel) {
@@ -61,6 +68,9 @@ func (runner RunCmdConfig) RunCmd(loglevel echo.LogLevel, name string, args ...s
 			}
 			if w == os.Stdout && runner.CaptureStdout {
 				stdoutBuf = append(stdoutBuf, scanner.Text())
+			}
+			if w == os.Stderr {
+				stderrBuf = append(stderrBuf, scanner.Text())
 			}
 		}
 	}
@@ -80,7 +90,7 @@ func (runner RunCmdConfig) RunCmd(loglevel echo.LogLevel, name string, args ...s
 
 	// wait for commnd to finish
 	if err := command.Wait(); err != nil {
-		return stdoutBuf, err, command.ProcessState.ExitCode()
+		return stdoutBuf, fmt.Errorf("%v", strings.Join(stderrBuf, " ")), command.ProcessState.ExitCode()
 	}
 	return stdoutBuf, nil, command.ProcessState.ExitCode()
 
@@ -104,4 +114,22 @@ func RunCmd(shouldColor bool, captureStdout bool, streamOutput bool, name string
 	r := NewRunner(level, shouldColor, captureStdout, streamOutput)
 
 	return r.RunCmd(echo.Info, name, args...)
+}
+
+// Takes a list of executables that are required to be in the system path
+//
+//	returns an error if any of them are not present.
+func RequireTools(names ...string) error {
+	var notInPath []string
+	for _, name := range names {
+		_, err := exec.LookPath(name)
+		if err != nil {
+			notInPath = append(notInPath, name)
+		}
+	}
+
+	if len(notInPath) != 0 {
+		return fmt.Errorf("The following executables have not been found in your system path: %v", strings.Join(notInPath, ", "))
+	}
+	return nil
 }

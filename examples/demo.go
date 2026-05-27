@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/adrianbaraka/goutils/cli"
+	"github.com/adrianbaraka/goutils/file"
 )
 
 func main() {
-	cli.RunCmd(true, false, true, "ls", "-la")
+	//cli.RunCmd(true, false, true, "ls", "-la")
 
 	strings.Contains("Hello", "h")
 
@@ -18,5 +18,6 @@ func main() {
 		fmt.Println("Hi")
 	}
 
+	fmt.Println(file.HumanReadableSize(1000, false))
 
 }
